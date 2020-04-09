@@ -1,6 +1,7 @@
 package com.mongodb;
 
 import com.mongodb.client.*;
+import com.mongodb.client.model.InsertManyOptions;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
@@ -9,152 +10,29 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class DBAPI {
-    private MongoClient mongoClient;
+    private String connectionString;
     private MongoDatabase database;
-    private MongoCollection<Document> collectionPerson;
-    private MongoCollection<Document> collectionCar;
-    private MongoCollection<Document> collectionOrganization;
-    private MongoCollection<Document> collectionToWhom;
+    private MongoCollection<Document> collection;
+
 
     DBAPI(){
-        mongoClient = MongoClients.create(
-                "mongodb+srv://Ivan:1234@testcluster-nzn6w.mongodb.net/test?retryWrites=true&w=majority");
+        connectionString = "mongodb+srv://Ivan:1234@testcluster-nzn6w.mongodb.net/test?retryWrites=true&w=majority";
 
+        MongoClient mongoClient = MongoClients.create(connectionString);
         database = mongoClient.getDatabase("Test");
-
-        collectionPerson = database.getCollection("Person");
-        collectionCar = database.getCollection("Car");
-        collectionOrganization = database.getCollection("Organization");
-        collectionToWhom = database.getCollection("ToWhom");
+        collection = database.getCollection("Data");
     }
 
-    public List<Document>  getPersons() {
-        List<Document> findPersonList = collectionPerson.find(new Document()).into(new ArrayList<>());
-        for (Document person : findPersonList) {
-            System.out.println(person.toJson());
-        }
-        return findPersonList;
-    }
-    public List<Document>  getCar() {
-        List<Document> findCarList = collectionCar.find(new Document()).into(new ArrayList<>());
-        for (Document car : findCarList) {
-            System.out.println(car.toJson());
-        }
-        return findCarList;
-    }
-    public List<Document>  getOrganization() {
-        List<Document> findOrganizationList = collectionOrganization.find(new Document()).into(new ArrayList<>());
-        for (Document organization : findOrganizationList) {
-            System.out.println(organization.toJson());
-        }
-        return findOrganizationList;
-    }
-    public List<Document>  getToWhom() {
-        List<Document> findToWhomList = collectionToWhom.find(new Document()).into(new ArrayList<>());
-        for (Document toWhom : findToWhomList) {
-            System.out.println(toWhom.toJson());
-        }
-        return findToWhomList;
+    public List<Document>  getAllDocument() {
+        List<Document> findAllDocument = collection.find(new Document()).into(new ArrayList<>());
+        return findAllDocument;
     }
 
-    public void packPersonVisitor(Document person, Document organization, Document toWhom){
-        ObjectId organizationId = (ObjectId) organization.get("_id");
-        ObjectId toWhomId = (ObjectId) toWhom.get("_id");
-        person.append("_idOrganization", organizationId)
-                .append("_idToWhom", toWhomId);
-
-        collectionPerson.insertOne(person);
-
-        Document findOrg = collectionOrganization.find(new Document("_id", organizationId)).first();
-        Document findToWhom = collectionToWhom.find(new Document("_id", toWhomId)).first();
-
-        if(findOrg == null)
-            collectionOrganization.insertOne(organization);
-
-        if(findToWhom == null)
-            collectionToWhom.insertOne(toWhom);
-    }
-    public void packCarVisitor(Document car, Document organization, Document toWhom){
-        ObjectId organizationId = (ObjectId) organization.get("_id");
-        ObjectId toWhomId = (ObjectId) toWhom.get("_id");
-        car.append("_idOrganization", organizationId)
-                .append("_idToWhom", toWhomId);
-
-        collectionCar.insertOne(car);
-
-        Document findOrg = collectionOrganization.find(new Document("_id", organizationId)).first();
-        Document findToWhom = collectionToWhom.find(new Document("_id", toWhomId)).first();
-        if(findOrg == null)
-            collectionOrganization.insertOne(organization);
-
-        if(findToWhom == null)
-            collectionToWhom.insertOne(toWhom);
+    public void insertOneDocument(Document doc){
+        collection.insertOne(doc);
     }
 
-    private void updatePersonData(Document person){
-
-    }
-
-//    private void updateCarData(String key, String data){
-//        Bson updateInformation = new Document(key, data);
-//
-//        Bson updateOperation = new Document("$set", updateInformation);
-//
-//        collectionCar.updateOne(car, updateOperation);
-//    }
-
-    private void updateOrganizationData(Document person){
-
-    }
-
-    public Document packPersonDocument(String name, String position, String phoneNumber, String purposeOfTheVisit,
-                          String accessObject){
-        Document tempDocument = new Document()
-                .append("_id", new ObjectId() )
-                .append("Name", name)
-                .append("Position", position)
-                .append("Phone number", phoneNumber)
-                .append("Purpose of the visit", purposeOfTheVisit)
-                .append("Access object", accessObject);
-
-        return tempDocument;
-    }
-
-    public Document packCarDocument(String carModel, String carNumber, String carOwner, String driverInformation,
-                        String passengerInformation, String purposeOfTheVisit, String accessObject){
-        Document tempDocument = new Document()
-                .append("_id", new ObjectId() )
-                .append("Model", carModel)
-                .append("Car number", carNumber)
-                .append("Car owner", carOwner)
-                .append("Driver information", driverInformation)
-                .append("Passenger information", passengerInformation)
-                .append("Purpose of the visit", purposeOfTheVisit)
-                .append("Access object", accessObject);
-
-        return tempDocument;
-    }
-
-    public Document packOrganizationDocument(String nameOfTheFirm){
-        Document tempDocument = new Document()
-                .append("_id", new ObjectId() )
-                .append("Name of the firm", nameOfTheFirm);
-
-        return tempDocument;
-    }
-
-    public Document packToWhomDocument(String nameToWhom, String nameDivision, String positionToWhom,
-                           String phoneNumberToWhom, String floor, String room) {
-        Document tempDocument = new Document()
-                .append("_id", new ObjectId() )
-                .append("Name", nameToWhom)
-                .append("Division name", nameDivision)
-                .append("To whom position", positionToWhom)
-                .append("Phone number to whom", phoneNumberToWhom)
-                .append("Floor", floor)
-                .append("Room", room);
-
-        return tempDocument;
+    public void insertListOfDocuments(List<Document> documents){
+        collection.insertMany(documents, new InsertManyOptions().ordered(false));
     }
 }
-
