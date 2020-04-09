@@ -1,3 +1,103 @@
+package com.mongodb;
+
+import com.mongodb.client.*;
+import org.bson.Document;
+import org.bson.conversions.Bson;
+import org.bson.types.ObjectId;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class DBAPI {
+    private MongoClient mongoClient;
+    private MongoDatabase database;
+    private MongoCollection<Document> collectionPerson;
+    private MongoCollection<Document> collectionCar;
+    private MongoCollection<Document> collectionOrganization;
+    private MongoCollection<Document> collectionToWhom;
+
+    DBAPI(){
+        mongoClient = MongoClients.create(
+                "mongodb+srv://Ivan:1234@testcluster-nzn6w.mongodb.net/test?retryWrites=true&w=majority");
+
+        database = mongoClient.getDatabase("Test");
+
+        collectionPerson = database.getCollection("Person");
+        collectionCar = database.getCollection("Car");
+        collectionOrganization = database.getCollection("Organization");
+        collectionToWhom = database.getCollection("ToWhom");
+    }
+
+    public List<Document>  getPersons() {
+        List<Document> findPersonList = collectionPerson.find(new Document()).into(new ArrayList<>());
+        for (Document person : findPersonList) {
+            System.out.println(person.toJson());
+        }
+        return findPersonList;
+    }
+    public List<Document>  getCar() {
+        List<Document> findCarList = collectionCar.find(new Document()).into(new ArrayList<>());
+        for (Document car : findCarList) {
+            System.out.println(car.toJson());
+        }
+        return findCarList;
+    }
+    public List<Document>  getOrganization() {
+        List<Document> findOrganizationList = collectionOrganization.find(new Document()).into(new ArrayList<>());
+        for (Document organization : findOrganizationList) {
+            System.out.println(organization.toJson());
+        }
+        return findOrganizationList;
+    }
+    public List<Document>  getToWhom() {
+        List<Document> findToWhomList = collectionToWhom.find(new Document()).into(new ArrayList<>());
+        for (Document toWhom : findToWhomList) {
+            System.out.println(toWhom.toJson());
+        }
+        return findToWhomList;
+    }
+
+    public void packPersonVisitor(Document person, Document organization, Document toWhom){
+        ObjectId organizationId = (ObjectId) organization.get("_id");
+        ObjectId toWhomId = (ObjectId) toWhom.get("_id");
+        person.append("_idOrganization", organizationId)
+                .append("_idToWhom", toWhomId);
+
+        collectionPerson.insertOne(person);
+
+        Document findOrg = collectionOrganization.find(new Document("_id", organizationId)).first();
+        Document findToWhom = collectionToWhom.find(new Document("_id", toWhomId)).first();
+
+        if(findOrg == null)
+            collectionOrganization.insertOne(organization);
+
+        if(findToWhom == null)
+            collectionToWhom.insertOne(toWhom);
+    }
+    public void packCarVisitor(Document car, Document organization, Document toWhom){
+        ObjectId organizationId = (ObjectId) organization.get("_id");
+        ObjectId toWhomId = (ObjectId) toWhom.get("_id");
+        car.append("_idOrganization", organizationId)
+                .append("_idToWhom", toWhomId);
+
+        collectionCar.insertOne(car);
+
+        Document findOrg = collectionOrganization.find(new Document("_id", organizationId)).first();
+        Document findToWhom = collectionToWhom.find(new Document("_id", toWhomId)).first();
+        if(findOrg == null)
+            collectionOrganization.insertOne(organization);
+
+        if(findToWhom == null)
+            collectionToWhom.insertOne(toWhom);
+    }
+
+    private void updatePersonData(Document person){
+
+    }
+
+//    private void updateCarData(String key, String data){
+//        Bson updateInformation = new Document(key, data);
+//
 //        Bson updateOperation = new Document("$set", updateInformation);
 //
 //        collectionCar.updateOne(car, updateOperation);
@@ -57,3 +157,4 @@
         return tempDocument;
     }
 }
+
